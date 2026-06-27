@@ -1,0 +1,961 @@
+
+<!DOCTYPE html>
+<html data-theme="light">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root {
+    /* Light mode (default) */
+    --surface-0: #f5f4f0;
+    --surface-1: #f9f8f5;
+    --surface-2: #fff;
+    --text-primary: #1a1a18;
+    --text-secondary: #666;
+    --text-muted: #999;
+    --border: rgba(0,0,0,0.12);
+    --border-strong: rgba(0,0,0,0.18);
+  }
+
+  html[data-theme="dark"] {
+    /* Dark mode */
+    --surface-0: #1a1a18;
+    --surface-1: #2d2d2a;
+    --surface-2: #3d3d3a;
+    --text-primary: #f5f4f0;
+    --text-secondary: #b0b0b0;
+    --text-muted: #808080;
+    --border: rgba(255,255,255,0.12);
+    --border-strong: rgba(255,255,255,0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans, system-ui, sans-serif); background: var(--surface-0); color: var(--text-primary); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+
+  .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+  /* Nav */
+  .nav { background: var(--surface-2, #fff); border-bottom: 0.5px solid var(--border, rgba(0,0,0,0.12)); padding: 0 1.5rem; display: flex; align-items: center; gap: 1rem; height: 52px; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 15px; color: var(--text-primary); }
+  .nav-logo-badge { width: 28px; height: 28px; background: #1a6b3c; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .nav-tabs { display: flex; gap: 0; margin-left: 1.5rem; }
+  .nav-tab { padding: 0 14px; height: 52px; display: flex; align-items: center; font-size: 13px; color: var(--text-secondary, #666); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .nav-tab:hover { color: var(--text-primary); }
+  .nav-tab.active { color: #1a6b3c; border-bottom-color: #1a6b3c; font-weight: 500; }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .theme-toggle { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: var(--surface-1); border: 0.5px solid var(--border); cursor: pointer; font-size: 14px; transition: all 0.15s; }
+  .theme-toggle:hover { background: var(--surface-0); }
+  .theme-toggle i { font-size: 16px; }
+  .badge-live { background: #dcfce7; color: #166534; font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+  .dot-pulse { width: 6px; height: 6px; background: #16a34a; border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* Main */
+  .main { flex: 1; padding: 1.5rem; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+  /* Stat cards */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--surface-1, #f9f8f5); border-radius: var(--radius, 8px); padding: 1rem; }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .stat-value { font-size: 24px; font-weight: 500; }
+  .stat-sub { font-size: 12px; color: var(--text-muted, #999); margin-top: 2px; }
+  .stat-value.red { color: #dc2626; }
+  .stat-value.amber { color: #d97706; }
+  .stat-value.green { color: #16a34a; }
+  .stat-value.blue { color: #2563eb; }
+
+  /* Two-col layout */
+  .two-col { display: grid; grid-template-columns: 1fr 380px; gap: 16px; }
+
+  /* Card */
+  .card { background: var(--surface-2, #fff); border: 0.5px solid var(--border, rgba(0,0,0,0.1)); border-radius: 12px; padding: 1.25rem; }
+  .card-title { font-size: 14px; font-weight: 500; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+  .card-title i { font-size: 16px; color: var(--text-secondary); }
+
+  /* Issue list */
+  .issue-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 0.5px solid var(--border, rgba(0,0,0,0.08)); cursor: pointer; transition: background 0.1s; }
+  .issue-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .issue-item:hover { background: var(--surface-1, #f9f8f5); margin: 0 -1.25rem; padding-left: 1.25rem; padding-right: 1.25rem; border-radius: 6px; }
+  .issue-thumb { width: 44px; height: 44px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: var(--surface-1); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .issue-body { flex: 1; min-width: 0; }
+  .issue-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .issue-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; flex-wrap: wrap; }
+  .severity-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+  .sev-critical { background: #fee2e2; color: #991b1b; }
+  .sev-high { background: #fef3c7; color: #92400e; }
+  .sev-medium { background: #dbeafe; color: #1e40af; }
+  .sev-low { background: #dcfce7; color: #166534; }
+  .status-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; padding: 2px 7px; border-radius: 20px; }
+  .st-open { background: #fef3c7; color: #92400e; }
+  .st-progress { background: #dbeafe; color: #1e40af; }
+  .st-resolved { background: #dcfce7; color: #166534; }
+  .st-verify { background: #f3e8ff; color: #6b21a8; }
+
+  /* Map placeholder */
+  .map-area { background: #e8f5e9; border-radius: 8px; height: 220px; position: relative; overflow: hidden; margin-bottom: 1rem; }
+  .map-grid { position: absolute; inset: 0; opacity: 0.3; background-image: linear-gradient(#388e3c 1px, transparent 1px), linear-gradient(90deg, #388e3c 1px, transparent 1px); background-size: 40px 40px; }
+  .map-pin { position: absolute; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.15s; }
+  .map-pin:hover { transform: scale(1.15); }
+  .map-pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .map-pin-label { font-size: 10px; font-weight: 500; background: rgba(255,255,255,0.9); border-radius: 3px; padding: 1px 4px; margin-top: 2px; white-space: nowrap; color: #222; }
+  .map-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--text-secondary); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+  /* Report form */
+  .report-section { display: none; }
+  .report-section.active { display: block; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 5px; display: block; }
+  .form-input { width: 100%; padding: 8px 12px; font-size: 13px; border: 0.5px solid var(--border-strong, rgba(0,0,0,0.18)); border-radius: var(--radius, 8px); background: var(--surface-2, #fff); color: var(--text-primary); outline: none; }
+  .form-input:focus { border-color: #1a6b3c; box-shadow: 0 0 0 3px rgba(26,107,60,0.1); }
+  select.form-input { cursor: pointer; }
+  .upload-area { border: 1.5px dashed var(--border-strong, rgba(0,0,0,0.2)); border-radius: 8px; padding: 1.5rem; text-align: center; font-size: 13px; color: var(--text-muted); cursor: pointer; background: var(--surface-1); transition: all 0.15s; }
+  .upload-area:hover { border-color: #1a6b3c; background: #f0fdf4; color: #166534; }
+  .ai-result { background: #f0fdf4; border: 0.5px solid #bbf7d0; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+  .ai-result-title { font-size: 12px; font-weight: 500; color: #166534; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .ai-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+  .ai-row span:first-child { color: var(--text-secondary); }
+  .ai-row span:last-child { font-weight: 500; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius, 8px); font-size: 13px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--border-strong, rgba(0,0,0,0.18)); background: var(--surface-2, #fff); color: var(--text-primary); transition: all 0.15s; }
+  .btn:hover { background: var(--surface-1); }
+  .btn-primary { background: #1a6b3c; color: #fff; border-color: #1a6b3c; }
+  .btn-primary:hover { background: #155c33; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1rem; }
+
+  /* AI triage visual */
+  .triage-flow { display: flex; align-items: center; gap: 0; margin-bottom: 1rem; overflow: hidden; }
+  .triage-step { flex: 1; text-align: center; position: relative; }
+  .triage-step-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 6px; font-size: 16px; }
+  .triage-step-label { font-size: 10px; color: var(--text-secondary); }
+  .triage-step-arrow { position: absolute; right: -6px; top: 14px; font-size: 12px; color: var(--text-muted); z-index:1; }
+  .ts-observe { background: #dbeafe; color: #1e40af; }
+  .ts-reason { background: #f3e8ff; color: #6b21a8; }
+  .ts-act { background: #dcfce7; color: #166534; }
+  .ts-fallback { background: #fef3c7; color: #92400e; }
+
+  /* Predictive heatmap bars */
+  .heatmap-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .heatmap-label { font-size: 12px; width: 100px; flex-shrink: 0; color: var(--text-secondary); }
+  .heatmap-bar-wrap { flex: 1; height: 14px; background: var(--surface-1); border-radius: 3px; overflow: hidden; }
+  .heatmap-bar { height: 100%; border-radius: 3px; transition: width 1s; }
+  .heatmap-pct { font-size: 11px; width: 36px; text-align: right; font-weight: 500; }
+  .risk-high { background: #ef4444; }
+  .risk-med { background: #f59e0b; }
+  .risk-low { background: #22c55e; }
+
+  /* Verification panel */
+  .verify-item { border: 0.5px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  .verify-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .verify-confidence { font-size: 12px; color: var(--text-muted); }
+  .verify-confidence strong { color: #d97706; }
+  .verify-actions { display: flex; gap: 6px; }
+  .votes { font-size: 11px; color: var(--text-secondary); margin-top: 6px; display: flex; gap: 12px; }
+  .votes span { display: flex; align-items: center; gap: 3px; }
+
+  /* Tab sections */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .nav-tabs { display: none; }
+  }
+
+  /* Loading */
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #bbf7d0; border-top-color: #16a34a; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .ai-thinking { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); padding: 8px 0; }
+
+  .crowd-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin: 6px 0; }
+  .crowd-confirm { background: #22c55e; }
+  .crowd-deny { background: #ef4444; }
+
+  .timeline { list-style: none; position: relative; padding-left: 20px; }
+  .timeline::before { content: ''; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 1px; background: var(--border); }
+  .tl-item { position: relative; padding-bottom: 14px; font-size: 12px; }
+  .tl-item::before { content: ''; position: absolute; left: -17px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background: #1a6b3c; border: 1.5px solid #fff; }
+  .tl-item:last-child { padding-bottom: 0; }
+  .tl-item .tl-time { color: var(--text-muted); font-size: 11px; }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .filter-chip { padding: 4px 12px; border-radius: 20px; font-size: 12px; border: 0.5px solid var(--border-strong); background: var(--surface-2); cursor: pointer; transition: all 0.12s; }
+  .filter-chip.active { background: #1a6b3c; color: #fff; border-color: #1a6b3c; }
+  .filter-chip:hover:not(.active) { background: var(--surface-1); }
+
+  /* Auth container */
+  .auth-container { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--surface-0); }
+  .auth-box { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 2rem; width: 100%; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+  .auth-header { text-align: center; margin-bottom: 1.5rem; }
+  .auth-header-logo { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600; font-size: 18px; color: var(--text-primary); margin-bottom: 1rem; }
+  .auth-header-logo-badge { width: 36px; height: 36px; background: #1a6b3c; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .auth-header h2 { font-size: 20px; color: var(--text-primary); margin-bottom: 4px; }
+  .auth-header p { font-size: 13px; color: var(--text-secondary); }
+  .auth-form { display: none; }
+  .auth-form.active { display: block; }
+  .auth-input-group { margin-bottom: 14px; }
+  .auth-input-group label { font-size: 12px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+  .auth-input-group input { width: 100%; padding: 10px 12px; font-size: 13px; border: 0.5px solid var(--border-strong); border-radius: 8px; background: var(--surface-1); color: var(--text-primary); outline: none; }
+  .auth-input-group input:focus { border-color: #1a6b3c; box-shadow: 0 0 0 3px rgba(26,107,60,0.1); }
+  .auth-btn { width: 100%; padding: 10px; margin-bottom: 12px; background: #1a6b3c; color: #fff; font-weight: 500; font-size: 14px; border: none; border-radius: 8px; cursor: pointer; transition: all 0.15s; }
+  .auth-btn:hover { background: #155c33; }
+  .auth-toggle { text-align: center; font-size: 13px; color: var(--text-secondary); }
+  .auth-toggle a { color: #1a6b3c; cursor: pointer; font-weight: 500; text-decoration: none; }
+  .auth-toggle a:hover { text-decoration: underline; }
+  .auth-error { background: #fee2e2; border: 0.5px solid #fecaca; color: #991b1b; padding: 10px; border-radius: 6px; font-size: 12px; margin-bottom: 12px; }
+  .auth-hidden { display: none !important; }
+
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" class="auth-container">
+  <div class="auth-box">
+    <div class="auth-header">
+      <div class="auth-header-logo">
+        <div class="auth-header-logo-badge">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M8 2L10 6H14L11 9L12 13L8 11L4 13L5 9L2 6H6L8 2Z" fill="white"/></svg>
+        </div>
+        Community Hero
+      </div>
+      <h2 id="auth-title">Login</h2>
+      <p id="auth-subtitle">Report and resolve community issues</p>
+    </div>
+
+    <div id="login-form" class="auth-form active">
+      <div id="login-error" class="auth-error" style="display:none;"></div>
+      <div class="auth-input-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="your@email.com">
+      </div>
+      <div class="auth-input-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••">
+      </div>
+      <button class="auth-btn" onclick="handleLogin()">Sign in</button>
+      <div class="auth-toggle">
+        Don't have an account? <a onclick="switchAuthMode('signup')">Sign up</a>
+      </div>
+    </div>
+
+    <div id="signup-form" class="auth-form">
+      <div id="signup-error" class="auth-error" style="display:none;"></div>
+      <div class="auth-input-group">
+        <label>Full name</label>
+        <input type="text" id="signup-name" placeholder="John Doe">
+      </div>
+      <div class="auth-input-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="your@email.com">
+      </div>
+      <div class="auth-input-group">
+        <label>Password</label>
+        <input type="password" id="signup-password" placeholder="••••••••">
+      </div>
+      <div class="auth-input-group">
+        <label>Confirm password</label>
+        <input type="password" id="signup-confirm" placeholder="••••••••">
+      </div>
+      <button class="auth-btn" onclick="handleSignup()">Create account</button>
+      <div class="auth-toggle">
+        Already have an account? <a onclick="switchAuthMode('login')">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-screen" class="auth-hidden">
+<div class="app">
+  <nav class="nav">
+    <div class="nav-logo">
+      <div class="nav-logo-badge">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2L10 6H14L11 9L12 13L8 11L4 13L5 9L2 6H6L8 2Z" fill="white"/></svg>
+      </div>
+      Community Hero
+    </div>
+    <div class="nav-tabs">
+      <div class="nav-tab active" onclick="switchTab('dashboard')">Dashboard</div>
+      <div class="nav-tab" onclick="switchTab('report')">Report issue</div>
+      <div class="nav-tab" onclick="switchTab('verify')">Verify</div>
+      <div class="nav-tab" onclick="switchTab('predict')">Predictive</div>
+    </div>
+    <div class="nav-right">
+      <div class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+        <i class="ti ti-sun" id="theme-icon" aria-hidden="true"></i>
+        <span id="theme-label">Light</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="user-display" style="font-size:13px;color:var(--text-secondary)"></span>
+        <button class="btn btn-sm" onclick="logout()" style="padding:5px 10px;font-size:12px">Logout</button>
+      </div>
+      <div class="badge-live"><div class="dot-pulse"></div>Live</div>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div id="section-dashboard" class="section active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Open issues</div>
+          <div class="stat-value red" id="stat-open">47</div>
+          <div class="stat-sub">↑ 3 today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">In progress</div>
+          <div class="stat-value amber" id="stat-progress">19</div>
+          <div class="stat-sub">↓ 2 from yesterday</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Resolved this week</div>
+          <div class="stat-value green" id="stat-resolved">34</div>
+          <div class="stat-sub">↑ 12% vs last week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending verification</div>
+          <div class="stat-value blue" id="stat-verify">8</div>
+          <div class="stat-sub">AI confidence &lt; 70%</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title"><i class="ti ti-map-pin" aria-hidden="true"></i> Issue map</div>
+            <div class="map-area">
+              <div class="map-grid"></div>
+              <!-- Street labels -->
+              <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.5)"></div>
+              <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.5)"></div>
+              <div style="position:absolute;top:52%;left:6px;font-size:9px;color:#2d6a3f;background:rgba(255,255,255,0.7);padding:1px 4px;border-radius:2px">MG Road</div>
+              <div style="position:absolute;left:52%;top:6px;font-size:9px;color:#2d6a3f;background:rgba(255,255,255,0.7);padding:1px 4px;border-radius:2px;writing-mode:vertical-rl">Station Rd</div>
+              <!-- Pins -->
+              <div class="map-pin" style="left:22%;top:28%" onclick="highlightIssue(0)">
+                <div class="map-pin-dot" style="background:#ef4444"></div>
+                <div class="map-pin-label">Pothole</div>
+              </div>
+              <div class="map-pin" style="left:48%;top:18%" onclick="highlightIssue(1)">
+                <div class="map-pin-dot" style="background:#ef4444"></div>
+                <div class="map-pin-label">Pothole</div>
+              </div>
+              <div class="map-pin" style="left:65%;top:55%" onclick="highlightIssue(2)">
+                <div class="map-pin-dot" style="background:#f59e0b"></div>
+                <div class="map-pin-label">Leakage</div>
+              </div>
+              <div class="map-pin" style="left:32%;top:62%" onclick="highlightIssue(3)">
+                <div class="map-pin-dot" style="background:#f59e0b"></div>
+                <div class="map-pin-label">Waste</div>
+              </div>
+              <div class="map-pin" style="left:78%;top:30%" onclick="highlightIssue(4)">
+                <div class="map-pin-dot" style="background:#22c55e"></div>
+                <div class="map-pin-label">Resolved</div>
+              </div>
+              <div class="map-pin" style="left:15%;top:72%" onclick="highlightIssue(5)">
+                <div class="map-pin-dot" style="background:#8b5cf6"></div>
+                <div class="map-pin-label">Verifying</div>
+              </div>
+            </div>
+            <div class="map-legend">
+              <span><span class="legend-dot" style="background:#ef4444"></span>Critical/Open</span>
+              <span><span class="legend-dot" style="background:#f59e0b"></span>In progress</span>
+              <span><span class="legend-dot" style="background:#22c55e"></span>Resolved</span>
+              <span><span class="legend-dot" style="background:#8b5cf6"></span>Verifying</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title"><i class="ti ti-list" aria-hidden="true"></i> Live issues</div>
+            <div class="filter-row">
+              <div class="filter-chip active" onclick="filterIssues(this,'all')">All</div>
+              <div class="filter-chip" onclick="filterIssues(this,'pothole')">Potholes</div>
+              <div class="filter-chip" onclick="filterIssues(this,'leakage')">Leakage</div>
+              <div class="filter-chip" onclick="filterIssues(this,'waste')">Waste</div>
+              <div class="filter-chip" onclick="filterIssues(this,'critical')">Critical</div>
+            </div>
+            <div id="issue-list"></div>
+          </div>
+        </div>
+
+        <div>
+          <!-- AI Triage flow -->
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title"><i class="ti ti-robot" aria-hidden="true"></i> AI triage agent</div>
+            <div class="triage-flow">
+              <div class="triage-step">
+                <div class="triage-step-icon ts-observe"><i class="ti ti-camera" aria-hidden="true"></i></div>
+                <div class="triage-step-label">Observe</div>
+                <div class="triage-step-arrow">›</div>
+              </div>
+              <div class="triage-step">
+                <div class="triage-step-icon ts-reason"><i class="ti ti-brain" aria-hidden="true"></i></div>
+                <div class="triage-step-label">Reason</div>
+                <div class="triage-step-arrow">›</div>
+              </div>
+              <div class="triage-step">
+                <div class="triage-step-icon ts-act"><i class="ti ti-bolt" aria-hidden="true"></i></div>
+                <div class="triage-step-label">Act</div>
+                <div class="triage-step-arrow">›</div>
+              </div>
+              <div class="triage-step">
+                <div class="triage-step-icon ts-fallback"><i class="ti ti-users" aria-hidden="true"></i></div>
+                <div class="triage-step-label">Fallback</div>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);line-height:1.6">
+              Agent analyzes each photo, assigns severity 1–5, tags GPS, and pushes to the right queue. When confidence &lt; 70%, it routes to community verification instead.
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+                <span style="color:var(--text-secondary)">Today's AI accuracy</span>
+                <span style="font-weight:500;color:#16a34a">94.2%</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px">
+                <span style="color:var(--text-secondary)">Routed to humans</span>
+                <span style="font-weight:500;color:#d97706">8 issues</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Timeline -->
+          <div class="card">
+            <div class="card-title"><i class="ti ti-clock" aria-hidden="true"></i> Recent activity</div>
+            <ul class="timeline">
+              <li class="tl-item">
+                <div>Pothole on MG Road <span class="severity-badge sev-critical">Critical</span> reported</div>
+                <div class="tl-time">2 min ago · AI triage: severity 5</div>
+              </li>
+              <li class="tl-item">
+                <div>Water leakage at Station Rd resolved by PWD</div>
+                <div class="tl-time">18 min ago · Ward 4</div>
+              </li>
+              <li class="tl-item">
+                <div>Community verified waste dump near Ambaji Market</div>
+                <div class="tl-time">41 min ago · 12 votes</div>
+              </li>
+              <li class="tl-item">
+                <div>Predictive alert: Nehru Rd area flagged high risk</div>
+                <div class="tl-time">1.2 hrs ago · 6 reports in zone</div>
+              </li>
+              <li class="tl-item">
+                <div>Streetlight issue auto-assigned to UGVCL</div>
+                <div class="tl-time">2 hrs ago · Notification sent</div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT ISSUE -->
+    <div id="section-report" class="section">
+      <div style="max-width:600px;margin:0 auto">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-plus" aria-hidden="true"></i> Report a community issue</div>
+
+          <div class="form-group">
+            <label class="form-label">Issue type</label>
+            <select class="form-input" id="issue-type" onchange="resetAI()">
+              <option value="">Select type…</option>
+              <option>Pothole / Road damage</option>
+              <option>Water leakage / Pipe burst</option>
+              <option>Garbage / Waste dumping</option>
+              <option>Streetlight not working</option>
+              <option>Drain blockage</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Location</label>
+            <input class="form-input" id="issue-loc" type="text" placeholder="e.g. Near Ambaji Market, MG Road" oninput="resetAI()">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" id="issue-desc" rows="3" placeholder="Describe the issue briefly…" style="resize:vertical" oninput="resetAI()"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Photo upload</label>
+            <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhotoSelect(event)">
+            <div class="upload-area" id="upload-area" onclick="document.getElementById('photo-input').click()">
+              <div id="upload-idle">
+                <i class="ti ti-photo" style="font-size:28px;display:block;margin-bottom:6px" aria-hidden="true"></i>
+                Tap to upload photo — AI will auto-verify
+              </div>
+              <div id="upload-loading" style="display:none">
+                <div class="ai-thinking"><div class="spinner"></div> AI agent analyzing image…</div>
+              </div>
+              <div id="upload-done" style="display:none">
+                <i class="ti ti-check" style="font-size:20px;color:#16a34a" aria-hidden="true"></i>
+                <span style="color:#16a34a;font-weight:500"> Photo analyzed</span>
+              </div>
+            </div>
+
+            <div id="ai-result-box" class="ai-result" style="display:none">
+              <div class="ai-result-title"><div class="spinner" style="border-color:#bbf7d0;border-top-color:#16a34a" id="ai-spinner"></div><span id="ai-result-title-text">AI triage in progress…</span></div>
+              <div id="ai-result-rows"></div>
+            </div>
+          </div>
+
+          <div id="fallback-box" style="display:none;background:#fef9c3;border:0.5px solid #fde047;border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px">
+            <strong style="color:#854d0e">Human review requested</strong><br>
+            <span style="color:#713f12">AI confidence is below 70%. This issue will be sent to community verifiers before being officially logged.</span>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn" onclick="resetForm()">Clear</button>
+            <button class="btn btn-primary" onclick="submitReport()"><i class="ti ti-send" aria-hidden="true"></i> Submit report</button>
+          </div>
+
+          <div id="submit-success" style="display:none;background:#f0fdf4;border:0.5px solid #bbf7d0;border-radius:8px;padding:14px;margin-top:1rem;font-size:13px">
+            <strong style="color:#166534"><i class="ti ti-check" aria-hidden="true"></i> Report submitted!</strong><br>
+            <span style="color:#15803d">Issue #<span id="issue-id">CHR-2847</span> created. You'll receive updates as the status changes.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VERIFY -->
+    <div id="section-verify" class="section">
+      <div style="max-width:640px;margin:0 auto">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-users" aria-hidden="true"></i> Community verification queue</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem">These reports had AI confidence &lt;70%. Confirm or reject to help improve accuracy.</div>
+
+          <div id="verify-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREDICTIVE -->
+    <div id="section-predict" class="section">
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title"><i class="ti ti-chart-area" aria-hidden="true"></i> Predictive maintenance risk zones</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem">Areas ranked by density of reports and historical failure rate. Budget pre-allocation recommended for high-risk zones.</div>
+          <div id="predict-bars"></div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Upcoming failure predictions</div>
+            <div style="font-size:13px">
+              <div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
+                <div style="font-weight:500;font-size:13px">Nehru Road drainage</div>
+                <div style="color:var(--text-muted);font-size:12px">Predicted failure in <strong style="color:#dc2626">4–7 days</strong></div>
+                <div style="color:var(--text-muted);font-size:11px;margin-top:2px">Based on 6 reports in 500m radius (30 days)</div>
+              </div>
+              <div style="padding:10px 0;border-bottom:0.5px solid var(--border)">
+                <div style="font-weight:500;font-size:13px">MG Road surface, Zone 2</div>
+                <div style="color:var(--text-muted);font-size:12px">Predicted failure in <strong style="color:#d97706">2–3 weeks</strong></div>
+                <div style="color:var(--text-muted);font-size:11px;margin-top:2px">3 potholes in 200m radius; monsoon approaching</div>
+              </div>
+              <div style="padding:10px 0">
+                <div style="font-weight:500;font-size:13px">Station Rd water main</div>
+                <div style="color:var(--text-muted);font-size:12px">Predicted failure in <strong style="color:#d97706">3–4 weeks</strong></div>
+                <div style="color:var(--text-muted);font-size:11px;margin-top:2px">2 leakages within 100m; 8yr old pipeline</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><i class="ti ti-coin" aria-hidden="true"></i> Suggested budget allocation</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">Recommended spend for Q3 based on predictive model</div>
+            <div class="heatmap-row">
+              <div class="heatmap-label">Road repairs</div>
+              <div class="heatmap-bar-wrap"><div class="heatmap-bar risk-high" style="width:72%"></div></div>
+              <div class="heatmap-pct" style="color:#dc2626">₹7.2L</div>
+            </div>
+            <div class="heatmap-row">
+              <div class="heatmap-label">Water/drainage</div>
+              <div class="heatmap-bar-wrap"><div class="heatmap-bar risk-med" style="width:45%"></div></div>
+              <div class="heatmap-pct" style="color:#d97706">₹4.5L</div>
+            </div>
+            <div class="heatmap-row">
+              <div class="heatmap-label">Waste mgmt</div>
+              <div class="heatmap-bar-wrap"><div class="heatmap-bar risk-med" style="width:30%"></div></div>
+              <div class="heatmap-pct" style="color:#d97706">₹3.0L</div>
+            </div>
+            <div class="heatmap-row">
+              <div class="heatmap-label">Street lighting</div>
+              <div class="heatmap-bar-wrap"><div class="heatmap-bar risk-low" style="width:18%"></div></div>
+              <div class="heatmap-pct" style="color:#16a34a">₹1.8L</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+const issues = [
+  { id:'CHR-2847', type:'Pothole / Road damage', loc:'MG Road, near Civil Hospital', sev:'critical', status:'open', votes:14, category:'pothole', emoji:'🕳️', time:'2 min ago' },
+  { id:'CHR-2844', type:'Pothole / Road damage', loc:'Station Road, opp. Bus Stand', sev:'high', status:'progress', votes:9, category:'pothole', emoji:'🕳️', time:'1 hr ago' },
+  { id:'CHR-2841', type:'Water leakage / Pipe burst', loc:'Ambaji Circle, Ward 4', sev:'high', status:'progress', votes:7, category:'leakage', emoji:'💧', time:'3 hrs ago' },
+  { id:'CHR-2838', type:'Garbage / Waste dumping', loc:'Near Patel Nagar bus stop', sev:'medium', status:'open', votes:11, category:'waste', emoji:'🗑️', time:'5 hrs ago' },
+  { id:'CHR-2835', type:'Drain blockage', loc:'Nehru Road, behind market', sev:'critical', status:'open', votes:18, category:'pothole', emoji:'🚧', time:'7 hrs ago' },
+  { id:'CHR-2829', type:'Streetlight not working', loc:'Gandhi Chowk, block 3', sev:'low', status:'open', votes:5, category:'waste', emoji:'💡', time:'12 hrs ago' },
+  { id:'CHR-2818', type:'Pothole / Road damage', loc:'Vikas Nagar Road', sev:'medium', status:'resolved', votes:6, category:'pothole', emoji:'🕳️', time:'1 day ago' },
+];
+
+const verifyItems = [
+  { id:'CHR-2846', type:'Garbage dumping', loc:'Near Railway Colony', confidence:58, desc:'Photo unclear — possible construction debris or garbage', yes:4, no:1 },
+  { id:'CHR-2843', type:'Water leakage', loc:'Subhash Chowk', confidence:62, desc:'Image shows wet road — could be rain runoff or pipe leak', yes:7, no:3 },
+  { id:'CHR-2839', type:'Pothole', loc:'Ambica Society', confidence:55, desc:'Low resolution image; road damage not clearly visible', yes:2, no:2 },
+];
+
+const zones = [
+  { name:'Nehru Road', pct:91, risk:'high' },
+  { name:'MG Road Zone 2', pct:76, risk:'high' },
+  { name:'Station Rd', pct:68, risk:'med' },
+  { name:'Ambaji Market', pct:54, risk:'med' },
+  { name:'Gandhi Chowk', pct:38, risk:'med' },
+  { name:'Vikas Nagar', pct:22, risk:'low' },
+  { name:'Patel Nagar', pct:15, risk:'low' },
+];
+
+function sevClass(s) { return {critical:'sev-critical',high:'sev-high',medium:'sev-medium',low:'sev-low'}[s]||'sev-low'; }
+function stClass(s) { return {open:'st-open',progress:'st-progress',resolved:'st-resolved',verify:'st-verify'}[s]||'st-open'; }
+function stLabel(s) { return {open:'Open',progress:'In progress',resolved:'Resolved',verify:'Verifying'}[s]||s; }
+let currentFilter = 'all';
+
+function renderIssues() {
+  const list = document.getElementById('issue-list');
+  const filtered = issues.filter(i => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'critical') return i.sev === 'critical';
+    return i.category === currentFilter;
+  });
+  list.innerHTML = filtered.map(i => `
+    <div class="issue-item">
+      <div class="issue-thumb">${i.emoji}</div>
+      <div class="issue-body">
+        <div class="issue-title">${i.type}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px">${i.loc}</div>
+        <div class="issue-meta">
+          <span class="severity-badge ${sevClass(i.sev)}">${i.sev}</span>
+          <span class="status-badge ${stClass(i.status)}">${stLabel(i.status)}</span>
+          <span>${i.id}</span>
+          <span>${i.time}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterIssues(el, f) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = f;
+  renderIssues();
+}
+
+function renderVerify() {
+  const list = document.getElementById('verify-list');
+  list.innerHTML = verifyItems.map((v, idx) => {
+    const total = v.yes + v.no;
+    const yesPct = Math.round(v.yes / Math.max(total, 1) * 100);
+    return `
+    <div class="verify-item" id="vitem-${idx}">
+      <div class="verify-header">
+        <div>
+          <div style="font-size:13px;font-weight:500">${v.type} — ${v.loc}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${v.desc}</div>
+        </div>
+        <div class="verify-confidence">AI: <strong>${v.confidence}%</strong></div>
+      </div>
+      <div class="crowd-bar">
+        <div class="crowd-confirm" style="width:${yesPct}%"></div>
+        <div class="crowd-deny" style="width:${100-yesPct}%"></div>
+      </div>
+      <div class="votes">
+        <span style="color:#16a34a"><i class="ti ti-thumb-up" aria-hidden="true"></i> ${v.yes} confirmed</span>
+        <span style="color:#dc2626"><i class="ti ti-thumb-down" aria-hidden="true"></i> ${v.no} rejected</span>
+      </div>
+      <div class="verify-actions" style="margin-top:8px">
+        <button class="btn btn-sm" style="color:#16a34a;border-color:#bbf7d0;background:#f0fdf4" onclick="castVote(${idx}, true)"><i class="ti ti-thumb-up" aria-hidden="true"></i> Confirm</button>
+        <button class="btn btn-sm" style="color:#dc2626;border-color:#fecaca;background:#fef2f2" onclick="castVote(${idx}, false)"><i class="ti ti-thumb-down" aria-hidden="true"></i> Reject</button>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:auto;align-self:center">${v.id}</span>
+      </div>
+    </div>
+  `}).join('');
+}
+
+function castVote(idx, confirm) {
+  const item = document.getElementById(`vitem-${idx}`);
+  if (item.dataset.voted) return;
+  item.dataset.voted = '1';
+  if (confirm) verifyItems[idx].yes++;
+  else verifyItems[idx].no++;
+  renderVerify();
+  const el = document.getElementById(`vitem-${idx}`);
+  el.style.opacity = '0.6';
+  el.style.pointerEvents = 'none';
+  const msg = confirm ? '✓ Confirmed — thanks for helping!' : '✗ Rejected — report flagged for review';
+  el.insertAdjacentHTML('beforeend', `<div style="font-size:12px;color:${confirm?'#16a34a':'#dc2626'};margin-top:8px;font-weight:500">${msg}</div>`);
+}
+
+function renderPredict() {
+  const bars = document.getElementById('predict-bars');
+  bars.innerHTML = zones.map(z => `
+    <div class="heatmap-row">
+      <div class="heatmap-label">${z.name}</div>
+      <div class="heatmap-bar-wrap"><div class="heatmap-bar risk-${z.risk}" style="width:${z.pct}%"></div></div>
+      <div class="heatmap-pct" style="color:${z.risk==='high'?'#dc2626':z.risk==='med'?'#d97706':'#16a34a'}">${z.pct}%</div>
+    </div>
+  `).join('');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(`section-${tab}`).classList.add('active');
+  const tabs = ['dashboard','report','verify','predict'];
+  const idx = tabs.indexOf(tab);
+  document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
+}
+
+function highlightIssue(i) {
+  switchTab('dashboard');
+}
+
+let aiDone = false;
+
+function handlePhotoSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  simulateUpload();
+}
+
+function simulateUpload() {
+  if (aiDone) return;
+  const idle = document.getElementById('upload-idle');
+  const loading = document.getElementById('upload-loading');
+  const done = document.getElementById('upload-done');
+  const resultBox = document.getElementById('ai-result-box');
+  const spinner = document.getElementById('ai-spinner');
+  const titleEl = document.getElementById('ai-result-title-text');
+  const rowsEl = document.getElementById('ai-result-rows');
+  const fallback = document.getElementById('fallback-box');
+
+  const type = document.getElementById('issue-type').value || 'Pothole / Road damage';
+  const isFallback = Math.random() < 0.25;
+  const confidence = isFallback ? Math.round(50 + Math.random() * 18) : Math.round(72 + Math.random() * 23);
+
+  idle.style.display = 'none';
+  loading.style.display = 'block';
+  resultBox.style.display = 'block';
+  titleEl.textContent = 'AI agent analyzing image…';
+  rowsEl.innerHTML = '';
+
+  setTimeout(() => {
+    loading.style.display = 'none';
+    done.style.display = 'block';
+    spinner.style.display = 'none';
+    titleEl.textContent = isFallback ? 'Low confidence — routing to community' : 'Triage complete';
+
+    const sev = isFallback ? 'Medium' : (['Critical','High','High','Medium'][Math.floor(Math.random()*4)]);
+    const cats = {'Pothole / Road damage':'Road damage','Water leakage / Pipe burst':'Water infrastructure','Garbage / Waste dumping':'Waste management','Streetlight not working':'Street infrastructure','Drain blockage':'Drainage'};
+    const cat = cats[type] || 'Infrastructure';
+
+    rowsEl.innerHTML = `
+      <div class="ai-row"><span>Detected issue</span><span>${type.split('/')[0].trim()}</span></div>
+      <div class="ai-row"><span>Category</span><span>${cat}</span></div>
+      <div class="ai-row"><span>Severity</span><span class="severity-badge ${sevClass(sev.toLowerCase())}" style="padding:1px 6px">${sev}</span></div>
+      <div class="ai-row"><span>AI confidence</span><span style="color:${isFallback?'#d97706':'#16a34a'}">${confidence}%</span></div>
+      <div class="ai-row"><span>Action</span><span style="font-size:12px">${isFallback?'→ Community queue':'→ Official queue'}</span></div>
+    `;
+
+    if (isFallback) fallback.style.display = 'block';
+    aiDone = true;
+  }, 2200);
+}
+
+function resetAI() { /* allow re-trigger if type changes */ }
+function resetForm() {
+  document.getElementById('issue-type').value = '';
+  document.getElementById('issue-loc').value = '';
+  document.getElementById('issue-desc').value = '';
+  document.getElementById('photo-input').value = '';
+  document.getElementById('upload-idle').style.display = 'block';
+  document.getElementById('upload-loading').style.display = 'none';
+  document.getElementById('upload-done').style.display = 'none';
+  document.getElementById('ai-result-box').style.display = 'none';
+  document.getElementById('fallback-box').style.display = 'none';
+  document.getElementById('submit-success').style.display = 'none';
+  aiDone = false;
+}
+
+function submitReport() {
+  const type = document.getElementById('issue-type').value;
+  const loc = document.getElementById('issue-loc').value;
+  if (!type || !loc) { alert('Please select an issue type and enter a location.'); return; }
+  const id = 'CHR-' + (2847 + Math.floor(Math.random()*100));
+  document.getElementById('issue-id').textContent = id;
+  document.getElementById('submit-success').style.display = 'block';
+  document.getElementById('submit-success').scrollIntoView({behavior:'smooth'});
+}
+
+// Authentication
+function switchAuthMode(mode) {
+  const loginForm = document.getElementById('login-form');
+  const signupForm = document.getElementById('signup-form');
+  const authTitle = document.getElementById('auth-title');
+  const authSubtitle = document.getElementById('auth-subtitle');
+  
+  if (mode === 'signup') {
+    loginForm.classList.remove('active');
+    signupForm.classList.add('active');
+    authTitle.textContent = 'Create Account';
+    authSubtitle.textContent = 'Join the community';
+  } else {
+    signupForm.classList.remove('active');
+    loginForm.classList.add('active');
+    authTitle.textContent = 'Login';
+    authSubtitle.textContent = 'Report and resolve community issues';
+  }
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('signup-error').style.display = 'none';
+}
+
+function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errorBox = document.getElementById('login-error');
+  
+  if (!email || !password) {
+    errorBox.textContent = 'Please enter email and password';
+    errorBox.style.display = 'block';
+    return;
+  }
+  
+  if (!email.includes('@')) {
+    errorBox.textContent = 'Please enter a valid email';
+    errorBox.style.display = 'block';
+    return;
+  }
+  
+  if (password.length < 6) {
+    errorBox.textContent = 'Password must be at least 6 characters';
+    errorBox.style.display = 'block';
+    return;
+  }
+  
+  // Store user session
+  const user = { email, name: email.split('@')[0], loginTime: new Date().toISOString() };
+  localStorage.setItem('user', JSON.stringify(user));
+  showApp();
+}
+
+function handleSignup() {
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-confirm').value;
+  const errorBox = document.getElementById('signup-error');
+  
+  if (!name || !email || !password || !confirm) {
+    errorBox.textContent = 'Please fill all fields';
+    errorBox.style.display = 'block';
+    return;
+  }
+  
+  if (!email.includes('@')) {
+    errorBox.textContent = 'Please enter a valid email';
+    errorBox.style.display = 'block';
+    return;
+  }
+  
+  if (password.length < 6) {
+    errorBox.textContent = 'Password must be at least 6 characters';
+    errorBox.style.display = 'block';
+    return;
+  }
+  
+  if (password !== confirm) {
+    errorBox.textContent = 'Passwords do not match';
+    errorBox.style.display = 'block';
+    return;
+  }
+  
+  // Store user session
+  const user = { email, name, loginTime: new Date().toISOString() };
+  localStorage.setItem('user', JSON.stringify(user));
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-screen').classList.remove('auth-hidden');
+}
+
+function logout() {
+  localStorage.removeItem('user');
+  location.reload();
+}
+
+function checkAuth() {
+  const user = localStorage.getItem('user');
+  if (user) {
+    const userData = JSON.parse(user);
+    document.getElementById('user-display').textContent = `Hi, ${userData.name}!`;
+    showApp();
+  }
+}
+
+// Theme switching
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const currentTheme = html.getAttribute('data-theme');
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  html.setAttribute('data-theme', newTheme);
+  localStorage.setItem('theme', newTheme);
+  updateThemeIcon(newTheme);
+}
+
+function updateThemeIcon(theme) {
+  const icon = document.getElementById('theme-icon');
+  const label = document.getElementById('theme-label');
+  if (theme === 'light') {
+    icon.className = 'ti ti-moon';
+    label.textContent = 'Light';
+  } else {
+    icon.className = 'ti ti-sun';
+    label.textContent = 'Dark';
+  }
+}
+
+// Initialize theme on page load
+initTheme();
+
+renderIssues();
+renderVerify();
+renderPredict();
+
+// Check authentication
+checkAuth();
+
+// Live counter animation
+setInterval(() => {
+  const open = document.getElementById('stat-open');
+  if (open) {
+    const n = parseInt(open.textContent);
+    if (Math.random() < 0.08) open.textContent = n + 1;
+  }
+}, 5000);
+</script>
+</body>
+</html>
